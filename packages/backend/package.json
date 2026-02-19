@@ -7,7 +7,8 @@
     "start": "nodemon src/index.js",
     "test": "jest --detectOpenHandles",
     "test:unit": "jest __tests__/app.test.js --detectOpenHandles",
-    "test:integration": "jest __tests__/integration --detectOpenHandles"
+    "test:integration": "jest __tests__/integration --detectOpenHandles",
+    "backup:db": "node scripts/backup-db.js"
   },
   "dependencies": {
     "better-sqlite3": "^11.10.0",

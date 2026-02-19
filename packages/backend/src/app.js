@@ -1,4 +1,6 @@
 const express = require('express');
+const fs = require('fs');
+const path = require('path');
 const cors = require('cors');
 const morgan = require('morgan');
 const Database = require('better-sqlite3');
@@ -11,12 +13,30 @@ app.use(cors());
 app.use(express.json());
 app.use(morgan('dev'));
 
-// Initialize in-memory SQLite database
-const db = new Database(':memory:');
+const isTestEnvironment = process.env.NODE_ENV === 'test';
+const databasePath =
+  process.env.TODO_DB_PATH
+  || path.join(__dirname, '..', 'data', 'todos.sqlite');
+
+if (!isTestEnvironment) {
+  fs.mkdirSync(path.dirname(databasePath), { recursive: true });
+}
+
+const db = new Database(isTestEnvironment ? ':memory:' : databasePath);
+
+if (!isTestEnvironment) {
+  db.pragma('journal_mode = WAL');
+}
 
 const ALLOWED_PRIORITIES = ['low', 'medium', 'high'];
 const ALLOWED_SORT_FIELDS = ['created_at', 'name', 'priority', 'due_date'];
 const ALLOWED_SORT_ORDERS = ['asc', 'desc'];
+
+const DEFAULT_SEED_ITEMS = [
+  { name: 'Welcome task', priority: 'medium', dueDate: null },
+  { name: 'Set your first due date', priority: 'high', dueDate: null },
+  { name: 'Try search and sort', priority: 'low', dueDate: null },
+];
 
 const isValidDateString = (value) => {
   if (typeof value !== 'string') {
@@ -94,6 +114,7 @@ const updateStmt = db.prepare(`
   SET name = ?, priority = ?, due_date = ?
   WHERE id = ?
 `);
+const countItemsStmt = db.prepare('SELECT COUNT(*) as count FROM items');
 
 const resetDatabase = (items = []) => {
   clearTableStmt.run();
@@ -108,6 +129,18 @@ const resetDatabase = (items = []) => {
     }
   });
 };
+
+const seedDatabaseIfEmpty = () => {
+  const row = countItemsStmt.get();
+
+  if (row.count === 0) {
+    resetDatabase(DEFAULT_SEED_ITEMS);
+  }
+};
+
+if (!isTestEnvironment) {
+  seedDatabaseIfEmpty();
+}
 
 // Health check endpoint
 app.get('/', (req, res) => {
@@ -243,7 +276,9 @@ app.delete('/api/items/:id', (req, res) => {
 module.exports = {
   app,
   db,
+  databasePath,
   resetDatabase,
+  seedDatabaseIfEmpty,
   isValidDateString,
   normalizePriority,
   normalizeName,

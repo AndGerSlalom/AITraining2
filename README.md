@@ -39,6 +39,14 @@ Once the Issue appears, follow its guidance to work through the exercise using C
 - Testing: Jest
 - Package management: npm workspaces
 
+## Data Persistence
+
+- Todos are stored persistently in a SQLite database file at `packages/backend/data/todos.sqlite`.
+- You can override the location with the `TODO_DB_PATH` environment variable.
+- In test runs (`NODE_ENV=test`), the backend uses an in-memory database.
+- On first start with an empty DB, starter todos are seeded automatically.
+- Create a manual backup with `npm run backup:db --workspace=backend`.
+
 ## License and Conduct
 
 &copy; 2025 Slalom • [Code of Conduct](https://www.contributor-covenant.org/version/2/1/code_of_conduct/code_of_conduct.md) • [MIT License](https://gh.io/mit)

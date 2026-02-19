@@ -9,6 +9,8 @@ node_modules/
 
 # Production
 /packages/frontend/build
+/packages/backend/data/*.sqlite
+/packages/backend/data/*.sqlite-*
 
 # Misc
 .DS_Store

@@ -254,6 +254,7 @@ function App() {
                   InputLabelProps={{ shrink: true }}
                   value={newTodo.dueDate}
                   onChange={(e) => setNewTodo({ ...newTodo, dueDate: e.target.value })}
+                  sx={{ minWidth: 190 }}
                 />
                 <Button variant="contained" type="submit" sx={{ bgcolor: 'secondary.main', color: 'black' }}>
                   Add
@@ -338,6 +339,7 @@ function App() {
                             InputLabelProps={{ shrink: true }}
                             value={editTodo.dueDate}
                             onChange={(e) => setEditTodo({ ...editTodo, dueDate: e.target.value })}
+                            sx={{ minWidth: 190 }}
                           />
                           <Button type="button" variant="contained" onClick={() => handleEditSave(item.id)}>Save</Button>
                           <Button type="button" variant="outlined" onClick={handleEditCancel}>Cancel</Button>

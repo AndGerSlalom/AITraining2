@@ -9,10 +9,14 @@ afterAll(() => {
 });
 
 // Test helpers
-const createItem = async (name = 'Temp Item to Delete') => {
+const createItem = async ({
+  name = 'Temp Item to Delete',
+  priority = 'medium',
+  dueDate = null,
+} = {}) => {
   const response = await request(app)
     .post('/api/items')
-    .send({ name })
+    .send({ name, priority, dueDate })
     .set('Accept', 'application/json');
 
   expect(response.status).toBe(201);
@@ -33,13 +37,19 @@ describe('API Endpoints', () => {
       const item = response.body[0];
       expect(item).toHaveProperty('id');
       expect(item).toHaveProperty('name');
+      expect(item).toHaveProperty('priority');
+      expect(item).toHaveProperty('due_date');
       expect(item).toHaveProperty('created_at');
     });
   });
 
   describe('POST /api/items', () => {
     it('should create a new item', async () => {
-      const newItem = { name: 'Test Item' };
+      const newItem = {
+        name: 'Test Item',
+        priority: 'high',
+        dueDate: '2026-03-01',
+      };
       const response = await request(app)
         .post('/api/items')
         .send(newItem)
@@ -48,6 +58,8 @@ describe('API Endpoints', () => {
       expect(response.status).toBe(201);
       expect(response.body).toHaveProperty('id');
       expect(response.body.name).toBe(newItem.name);
+      expect(response.body.priority).toBe(newItem.priority);
+      expect(response.body.due_date).toBe(newItem.dueDate);
       expect(response.body).toHaveProperty('created_at');
     });
 
@@ -72,11 +84,51 @@ describe('API Endpoints', () => {
       expect(response.body).toHaveProperty('error');
       expect(response.body.error).toBe('Item name is required');
     });
+
+    it('should return 400 for invalid priority', async () => {
+      const response = await request(app)
+        .post('/api/items')
+        .send({ name: 'Item', priority: 'urgent' })
+        .set('Accept', 'application/json');
+
+      expect(response.status).toBe(400);
+      expect(response.body).toHaveProperty('error', 'Priority must be low, medium, or high');
+    });
+  });
+
+  describe('PUT /api/items/:id', () => {
+    it('should edit an existing item', async () => {
+      const item = await createItem({ name: 'Initial Name', priority: 'low' });
+
+      const response = await request(app)
+        .put(`/api/items/${item.id}`)
+        .send({
+          name: 'Updated Name',
+          priority: 'high',
+          dueDate: '2026-04-01',
+        })
+        .set('Accept', 'application/json');
+
+      expect(response.status).toBe(200);
+      expect(response.body.name).toBe('Updated Name');
+      expect(response.body.priority).toBe('high');
+      expect(response.body.due_date).toBe('2026-04-01');
+    });
+
+    it('should return 404 when editing a missing item', async () => {
+      const response = await request(app)
+        .put('/api/items/999999')
+        .send({ name: 'Updated Name' })
+        .set('Accept', 'application/json');
+
+      expect(response.status).toBe(404);
+      expect(response.body).toHaveProperty('error', 'Item not found');
+    });
   });
 
   describe('DELETE /api/items/:id', () => {
     it('should delete an existing item', async () => {
-      const item = await createItem('Item To Be Deleted');
+      const item = await createItem({ name: 'Item To Be Deleted' });
 
       const deleteResponse = await request(app).delete(`/api/items/${item.id}`);
       expect(deleteResponse.status).toBe(200);

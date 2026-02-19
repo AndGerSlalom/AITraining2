@@ -32,9 +32,16 @@ section {
 }
 
 .add-item-section form {
-  display: flex;
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr auto;
   gap: 10px;
   margin-top: 10px;
+}
+
+.controls-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 10px;
 }
 
 input {
@@ -67,9 +74,6 @@ li {
   padding: 10px;
   border-bottom: 1px solid #ddd;
   text-align: left;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
 }
 
 li:last-child {
@@ -81,7 +85,6 @@ li:last-child {
   color: white;
   padding: 6px 12px;
   font-size: 0.8rem;
-  margin-left: 10px;
 }
 
 .delete-btn:hover {
@@ -91,4 +94,50 @@ li:last-child {
 .error {
   color: #d32f2f;
   font-weight: bold;
+}
+
+.todo-row,
+.todo-edit-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.todo-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.todo-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.secondary-btn {
+  background-color: #e0e0e0;
+  color: #222;
+}
+
+.secondary-btn:hover {
+  background-color: #cfcfcf;
+}
+
+@media (max-width: 700px) {
+  .add-item-section form,
+  .controls-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .todo-row,
+  .todo-edit-row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .todo-actions {
+    justify-content: flex-end;
+  }
 }

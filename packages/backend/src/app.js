@@ -14,21 +14,55 @@ app.use(morgan('dev'));
 // Initialize in-memory SQLite database
 const db = new Database(':memory:');
 
+const ALLOWED_PRIORITIES = ['low', 'medium', 'high'];
+
+const isValidDateString = (value) => {
+  if (!value) {
+    return false;
+  }
+
+  return !Number.isNaN(Date.parse(value));
+};
+
+const normalizePriority = (priority) => {
+  if (typeof priority !== 'string') {
+    return null;
+  }
+
+  const normalized = priority.trim().toLowerCase();
+  return ALLOWED_PRIORITIES.includes(normalized) ? normalized : null;
+};
+
 // Create tables
 db.exec(`
   CREATE TABLE IF NOT EXISTS items (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL,
+    priority TEXT NOT NULL DEFAULT 'medium',
+    due_date TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
   )
 `);
 
 // Insert some initial data
-const initialItems = ['Item 1', 'Item 2', 'Item 3'];
-const insertStmt = db.prepare('INSERT INTO items (name) VALUES (?)');
+const initialItems = [
+  { name: 'Item 1', priority: 'medium', dueDate: null },
+  { name: 'Item 2', priority: 'high', dueDate: null },
+  { name: 'Item 3', priority: 'low', dueDate: null },
+];
+
+const insertStmt = db.prepare('INSERT INTO items (name, priority, due_date) VALUES (?, ?, ?)');
+const getByIdStmt = db.prepare('SELECT * FROM items WHERE id = ?');
+const getAllStmt = db.prepare('SELECT * FROM items ORDER BY created_at DESC, id DESC');
+const deleteStmt = db.prepare('DELETE FROM items WHERE id = ?');
+const updateStmt = db.prepare(`
+  UPDATE items
+  SET name = ?, priority = ?, due_date = ?
+  WHERE id = ?
+`);
 
 initialItems.forEach(item => {
-  insertStmt.run(item);
+  insertStmt.run(item.name, item.priority, item.dueDate);
 });
 
 console.log('In-memory database initialized with sample data');
@@ -41,7 +75,7 @@ app.get('/', (req, res) => {
 // API Routes
 app.get('/api/items', (req, res) => {
   try {
-    const items = db.prepare('SELECT * FROM items ORDER BY created_at DESC').all();
+    const items = getAllStmt.all();
     res.json(items);
   } catch (error) {
     console.error('Error fetching items:', error);
@@ -51,20 +85,69 @@ app.get('/api/items', (req, res) => {
 
 app.post('/api/items', (req, res) => {
   try {
-    const { name } = req.body;
+    const { name, priority, dueDate } = req.body;
 
     if (!name || typeof name !== 'string' || name.trim() === '') {
       return res.status(400).json({ error: 'Item name is required' });
     }
 
-    const result = insertStmt.run(name);
+    const normalizedPriority = priority === undefined ? 'medium' : normalizePriority(priority);
+    if (!normalizedPriority) {
+      return res.status(400).json({ error: 'Priority must be low, medium, or high' });
+    }
+
+    if (dueDate !== undefined && dueDate !== null && !isValidDateString(dueDate)) {
+      return res.status(400).json({ error: 'Due date must be a valid date' });
+    }
+
+    const result = insertStmt.run(name.trim(), normalizedPriority, dueDate ?? null);
     const id = result.lastInsertRowid;
 
-    const newItem = db.prepare('SELECT * FROM items WHERE id = ?').get(id);
+    const newItem = getByIdStmt.get(id);
     res.status(201).json(newItem);
   } catch (error) {
     console.error('Error creating item:', error);
     res.status(500).json({ error: 'Failed to create item' });
+  }
+});
+
+app.put('/api/items/:id', (req, res) => {
+  try {
+    const { id } = req.params;
+
+    if (!id || Number.isNaN(Number(id))) {
+      return res.status(400).json({ error: 'Valid item ID is required' });
+    }
+
+    const existingItem = getByIdStmt.get(id);
+    if (!existingItem) {
+      return res.status(404).json({ error: 'Item not found' });
+    }
+
+    const { name, priority, dueDate } = req.body;
+
+    const updatedName = name === undefined ? existingItem.name : name;
+    if (!updatedName || typeof updatedName !== 'string' || updatedName.trim() === '') {
+      return res.status(400).json({ error: 'Item name is required' });
+    }
+
+    const updatedPriority = priority === undefined ? existingItem.priority : normalizePriority(priority);
+    if (!updatedPriority) {
+      return res.status(400).json({ error: 'Priority must be low, medium, or high' });
+    }
+
+    const updatedDueDate = dueDate === undefined ? existingItem.due_date : dueDate;
+    if (updatedDueDate !== null && updatedDueDate !== '' && !isValidDateString(updatedDueDate)) {
+      return res.status(400).json({ error: 'Due date must be a valid date' });
+    }
+
+    updateStmt.run(updatedName.trim(), updatedPriority, updatedDueDate || null, id);
+    const updatedItem = getByIdStmt.get(id);
+
+    return res.json(updatedItem);
+  } catch (error) {
+    console.error('Error updating item:', error);
+    return res.status(500).json({ error: 'Failed to update item' });
   }
 });
 
@@ -76,12 +159,11 @@ app.delete('/api/items/:id', (req, res) => {
       return res.status(400).json({ error: 'Valid item ID is required' });
     }
 
-    const existingItem = db.prepare('SELECT * FROM items WHERE id = ?').get(id);
+    const existingItem = getByIdStmt.get(id);
     if (!existingItem) {
       return res.status(404).json({ error: 'Item not found' });
     }
 
-    const deleteStmt = db.prepare('DELETE FROM items WHERE id = ?');
     const result = deleteStmt.run(id);
 
     if (result.changes > 0) {
@@ -95,4 +177,4 @@ app.delete('/api/items/:id', (req, res) => {
   }
 });
 
-module.exports = { app, db, insertStmt };
+module.exports = { app, db };

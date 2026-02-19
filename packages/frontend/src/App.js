@@ -1,11 +1,39 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import './App.css';
+import {
+  Alert,
+  Box,
+  Button,
+  CircularProgress,
+  Container,
+  List,
+  ListItem,
+  Paper,
+  Stack,
+  TextField,
+  ThemeProvider,
+  Typography,
+  createTheme,
+} from '@mui/material';
 
 const PRIORITY_ORDER = {
   low: 1,
   medium: 2,
   high: 3,
 };
+
+const appTheme = createTheme({
+  palette: {
+    primary: {
+      main: '#1976d2',
+    },
+    secondary: {
+      main: '#fbc02d',
+    },
+    background: {
+      default: '#f7f9fc',
+    },
+  },
+});
 
 function App() {
   const [todos, setTodos] = useState([]);
@@ -186,129 +214,166 @@ function App() {
   };
 
   return (
-    <div className="App">
-      <header className="App-header">
-        <h1>Todo App</h1>
-        <p>Add, edit, search, sort, and manage priorities and due dates.</p>
-      </header>
+    <ThemeProvider theme={appTheme}>
+      <Box sx={{ minHeight: '100vh', backgroundColor: 'background.default', py: 4 }}>
+        <Container maxWidth="md">
+          <Paper sx={{ p: 3, mb: 3 }} elevation={2}>
+            <Typography variant="h4" component="h1" gutterBottom>
+              Todo App
+            </Typography>
+            <Typography color="text.secondary">
+              Add, edit, search, sort, and manage priorities and due dates.
+            </Typography>
+          </Paper>
 
-      <main>
-        <section className="add-item-section">
-          <h2>Add Todo</h2>
-          <form onSubmit={handleSubmit}>
-            <input
-              type="text"
-              aria-label="New todo name"
-              value={newTodo.name}
-              onChange={(e) => setNewTodo({ ...newTodo, name: e.target.value })}
-              placeholder="Enter todo name"
-            />
-            <select
-              aria-label="New todo priority"
-              value={newTodo.priority}
-              onChange={(e) => setNewTodo({ ...newTodo, priority: e.target.value })}
-            >
-              <option value="low">Low</option>
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
-            </select>
-            <input
-              type="date"
-              aria-label="New todo due date"
-              value={newTodo.dueDate}
-              onChange={(e) => setNewTodo({ ...newTodo, dueDate: e.target.value })}
-            />
-            <button type="submit">Add</button>
-          </form>
-        </section>
+          <Paper sx={{ p: 3, mb: 3 }} elevation={2}>
+            <Typography variant="h6" gutterBottom>Add Todo</Typography>
+            <Box component="form" onSubmit={handleSubmit}>
+              <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+                <TextField
+                  fullWidth
+                  label="New todo name"
+                  value={newTodo.name}
+                  onChange={(e) => setNewTodo({ ...newTodo, name: e.target.value })}
+                />
+                <TextField
+                  select
+                  label="New todo priority"
+                  value={newTodo.priority}
+                  onChange={(e) => setNewTodo({ ...newTodo, priority: e.target.value })}
+                  SelectProps={{ native: true }}
+                  sx={{ minWidth: 160 }}
+                >
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </TextField>
+                <TextField
+                  type="date"
+                  label="New todo due date"
+                  InputLabelProps={{ shrink: true }}
+                  value={newTodo.dueDate}
+                  onChange={(e) => setNewTodo({ ...newTodo, dueDate: e.target.value })}
+                />
+                <Button variant="contained" type="submit" sx={{ bgcolor: 'secondary.main', color: 'black' }}>
+                  Add
+                </Button>
+              </Stack>
+            </Box>
+          </Paper>
 
-        <section className="controls-section">
-          <h2>Search and Sort</h2>
-          <div className="controls-grid">
-            <input
-              type="text"
-              aria-label="Search todos"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              placeholder="Search todos"
-            />
-            <select aria-label="Sort by" value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
-              <option value="created_at">Sort by Created Date</option>
-              <option value="name">Sort by Name</option>
-              <option value="priority">Sort by Priority</option>
-              <option value="due_date">Sort by Due Date</option>
-            </select>
-            <select aria-label="Sort order" value={sortOrder} onChange={(e) => setSortOrder(e.target.value)}>
-              <option value="asc">Ascending</option>
-              <option value="desc">Descending</option>
-            </select>
-          </div>
-        </section>
+          <Paper sx={{ p: 3, mb: 3 }} elevation={2}>
+            <Typography variant="h6" gutterBottom>Search and Sort</Typography>
+            <Stack direction={{ xs: 'column', md: 'row' }} spacing={2}>
+              <TextField
+                fullWidth
+                label="Search todos"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+              <TextField
+                select
+                label="Sort by"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value)}
+                SelectProps={{ native: true }}
+                sx={{ minWidth: 200 }}
+              >
+                <option value="created_at">Sort by Created Date</option>
+                <option value="name">Sort by Name</option>
+                <option value="priority">Sort by Priority</option>
+                <option value="due_date">Sort by Due Date</option>
+              </TextField>
+              <TextField
+                select
+                label="Sort order"
+                value={sortOrder}
+                onChange={(e) => setSortOrder(e.target.value)}
+                SelectProps={{ native: true }}
+                sx={{ minWidth: 160 }}
+              >
+                <option value="asc">Ascending</option>
+                <option value="desc">Descending</option>
+              </TextField>
+            </Stack>
+          </Paper>
 
-        <section className="items-section">
-          <h2>Todos</h2>
-          {loading && <p>Loading data...</p>}
-          {error && <p className="error">{error}</p>}
-          {!loading && !error && (
-            <ul>
-              {filteredAndSortedTodos.length > 0 ? (
-                filteredAndSortedTodos.map((item) => (
-                  <li key={item.id}>
-                    {editingId === item.id ? (
-                      <div className="todo-edit-row">
-                        <input
-                          type="text"
-                          aria-label="Edit todo name"
-                          value={editTodo.name}
-                          onChange={(e) => setEditTodo({ ...editTodo, name: e.target.value })}
-                        />
-                        <select
-                          aria-label="Edit todo priority"
-                          value={editTodo.priority}
-                          onChange={(e) => setEditTodo({ ...editTodo, priority: e.target.value })}
-                        >
-                          <option value="low">Low</option>
-                          <option value="medium">Medium</option>
-                          <option value="high">High</option>
-                        </select>
-                        <input
-                          type="date"
-                          aria-label="Edit todo due date"
-                          value={editTodo.dueDate}
-                          onChange={(e) => setEditTodo({ ...editTodo, dueDate: e.target.value })}
-                        />
-                        <button type="button" onClick={() => handleEditSave(item.id)}>Save</button>
-                        <button type="button" onClick={handleEditCancel} className="secondary-btn">Cancel</button>
-                      </div>
-                    ) : (
-                      <div className="todo-row">
-                        <div className="todo-meta">
-                          <strong>{item.name}</strong>
-                          <span>Priority: {item.priority}</span>
-                          <span>Due: {item.due_date ? item.due_date.slice(0, 10) : '—'}</span>
-                        </div>
-                        <div className="todo-actions">
-                          <button type="button" onClick={() => handleEditStart(item)} className="secondary-btn">Edit</button>
-                          <button
-                            onClick={() => handleDelete(item.id)}
-                            className="delete-btn"
-                            type="button"
+          <Paper sx={{ p: 3 }} elevation={2}>
+            <Typography variant="h6" gutterBottom>Todos</Typography>
+            {loading && (
+              <Stack direction="row" spacing={2} alignItems="center">
+                <CircularProgress size={22} />
+                <Typography>Loading data...</Typography>
+              </Stack>
+            )}
+            {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+            {!loading && !error && (
+              <List sx={{ p: 0 }}>
+                {filteredAndSortedTodos.length > 0 ? (
+                  filteredAndSortedTodos.map((item) => (
+                    <ListItem key={item.id} divider sx={{ px: 0 }}>
+                      {editingId === item.id ? (
+                        <Stack direction={{ xs: 'column', md: 'row' }} spacing={2} sx={{ width: '100%' }}>
+                          <TextField
+                            fullWidth
+                            label="Edit todo name"
+                            value={editTodo.name}
+                            onChange={(e) => setEditTodo({ ...editTodo, name: e.target.value })}
+                          />
+                          <TextField
+                            select
+                            label="Edit todo priority"
+                            value={editTodo.priority}
+                            onChange={(e) => setEditTodo({ ...editTodo, priority: e.target.value })}
+                            SelectProps={{ native: true }}
+                            sx={{ minWidth: 140 }}
                           >
-                            Delete
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </li>
-                ))
-              ) : (
-                <li>No todos found.</li>
-              )}
-            </ul>
-          )}
-        </section>
-      </main>
-    </div>
+                            <option value="low">Low</option>
+                            <option value="medium">Medium</option>
+                            <option value="high">High</option>
+                          </TextField>
+                          <TextField
+                            type="date"
+                            label="Edit todo due date"
+                            InputLabelProps={{ shrink: true }}
+                            value={editTodo.dueDate}
+                            onChange={(e) => setEditTodo({ ...editTodo, dueDate: e.target.value })}
+                          />
+                          <Button type="button" variant="contained" onClick={() => handleEditSave(item.id)}>Save</Button>
+                          <Button type="button" variant="outlined" onClick={handleEditCancel}>Cancel</Button>
+                        </Stack>
+                      ) : (
+                        <Stack
+                          direction={{ xs: 'column', md: 'row' }}
+                          justifyContent="space-between"
+                          alignItems={{ xs: 'flex-start', md: 'center' }}
+                          spacing={2}
+                          sx={{ width: '100%' }}
+                        >
+                          <Box>
+                            <Typography variant="subtitle1" fontWeight={700}>{item.name}</Typography>
+                            <Typography variant="body2">Priority: {item.priority}</Typography>
+                            <Typography variant="body2">Due: {item.due_date ? item.due_date.slice(0, 10) : '—'}</Typography>
+                          </Box>
+                          <Stack direction="row" spacing={1}>
+                            <Button type="button" variant="outlined" onClick={() => handleEditStart(item)}>Edit</Button>
+                            <Button type="button" variant="contained" color="secondary" onClick={() => handleDelete(item.id)} sx={{ color: 'black' }}>
+                              Delete
+                            </Button>
+                          </Stack>
+                        </Stack>
+                      )}
+                    </ListItem>
+                  ))
+                ) : (
+                  <Typography>No todos found.</Typography>
+                )}
+              </List>
+            )}
+          </Paper>
+        </Container>
+      </Box>
+    </ThemeProvider>
   );
 }
 
